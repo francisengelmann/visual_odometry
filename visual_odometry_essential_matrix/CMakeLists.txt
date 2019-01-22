@@ -18,6 +18,6 @@ add_compile_options(-Wno-unused-result)
 add_definitions(-O3)
 
 link_directories(${Open3D_LIBRARY_DIRS})
-add_executable(EssentialMatrix main.cpp)
+add_executable(EssentialMatrix main.cpp EssentialMatrix.cpp EssentialMatrix.h)
 target_link_libraries(EssentialMatrix ${Open3D_LIBRARIES})
 target_include_directories(EssentialMatrix PUBLIC ${Open3D_INCLUDE_DIRS})

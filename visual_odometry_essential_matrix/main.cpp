@@ -6,6 +6,8 @@
 #include <IO/IO.h>
 #include <Visualization/Visualization.h>
 
+#include "EssentialMatrix.h"
+
 namespace o3d = open3d;
 
 void CreateTransformation(
@@ -74,28 +76,55 @@ void ProjectObject(
     // projection.Transform(P);
 }
 
+void ConvertPointcloudToMatrix(const o3d::PointCloud &pointcloud, // 3D points, z is ignored
+                               Eigen::MatrixXd &matrix)           // homogeneous 2D coordinates (Nx3)
+{
+    matrix.resize(pointcloud.points_.size(), 3);
+    for (size_t i = 0; i < pointcloud.points_.size(); ++i) {
+        matrix.block<1, 3>(i, 0) = pointcloud.points_.at(i);
+        matrix(i, 2) = 1.0;
+    }
+}
+
+std::shared_ptr<o3d::PointCloud> ConvertMatrixToPointcloud(const Eigen::MatrixXd &matrix)  // (N x 3)
+{
+    auto pointcloud = std::make_shared<o3d::PointCloud>();
+    for (int i=0; i < matrix.rows(); i++){
+        Eigen::Vector3d v = matrix.block<1, 3>(i, 0);
+        pointcloud->points_.push_back(v);
+    }
+    return pointcloud;
+}
+
 int main(int argc, char *argv[])
 {
-    // std::string path = "data/big_porsche.ply";
-    auto cloud1 = std::make_shared<o3d::PointCloud>();
-    std::string path = "data/head2.ply";
-    o3d::ReadPointCloud(path, *cloud1);
-    cloud1->NormalizeNormals();
-    cloud1->PaintUniformColor(Eigen::Vector3d(0.8, 0.2, 0.3));
     auto trafo = std::make_shared<Eigen::Matrix4d>();
     CreateTransformation(
             -90, 0, -90,
             0, 1, -5,
             10, 10, 10, *trafo);
+
+    CreateTransformation(
+            0, 0, 0,
+            0, 0, -5,
+            0.1, 0.1, 0.1, *trafo);
+
+    auto cloud1 = std::make_shared<o3d::PointCloud>();
+    // std::string path = "data/head2.ply";
+    //std::string path = "data/big_porsche.ply";
+    std::string path = "data/ant.ply";
+    o3d::ReadPointCloud(path, *cloud1);
+    cloud1->NormalizeNormals();
+    cloud1->PaintUniformColor(Eigen::Vector3d(0.8, 0.2, 0.3));
     cloud1->Transform(*trafo);
     o3d::EstimateNormals(*cloud1);
     cloud1->NormalizeNormals();
 
     // Define matrixes
     Eigen::Matrix3d K;
-    K <<   2,   0,  0,
-            0,   2, 0,
-            0,   0,  1;
+    K <<  2, 0, 0,
+          0, 2, 0,
+          0, 0, 1;
 
     Eigen::Matrix4d P1;
     CreateTransformation(0, 0, 0,
@@ -103,8 +132,8 @@ int main(int argc, char *argv[])
                          1, 1, 1,
                          P1);
     Eigen::Matrix4d P2;
-    CreateTransformation(0, -90, 0,
-                         5, 0, -5,
+    CreateTransformation(0, -45, 0,
+                         3, 0, -2.0,
                          1, 1, 1,
                          P2);
 
@@ -120,5 +149,40 @@ int main(int argc, char *argv[])
     ProjectObject(K, P1, *cloud1, *proj_1);
     ProjectObject(K, P2, *cloud1, *proj_2);
 
-    o3d::DrawGeometries({cam_1_coords, cam_2_coords, cloud1, proj_1, proj_2}, "PointCloud", 1600, 900);
+    // Correspondences between two camera images
+    auto points_1 = std::make_shared<Eigen::MatrixXd>();
+    auto points_2 = std::make_shared<Eigen::MatrixXd>();
+    ConvertPointcloudToMatrix(*proj_1, *points_1);
+    ConvertPointcloudToMatrix(*proj_2, *points_2);
+
+    // Compute essential matrix
+    auto ess = std::make_shared<EssentialMatrix>(K, K, *points_1, *points_2);
+    ess->estimateEssentialMatrix();
+    ess->constructPoses();
+    auto poses = ess->getPoses();
+
+    std::vector<std::shared_ptr<o3d::TriangleMesh>> cyls;
+    cyls.resize(4);
+    int i = 0;
+    for (auto &cyl : cyls) {
+        cyl = o3d::CreateMeshArrow(0.050, 0.1, 1.0, 0.3);
+        cyl->Transform(poses->at(i));
+        cyl->PaintUniformColor(Eigen::Vector3d(0.0, 0.5, 1.0));
+        cyl->ComputeVertexNormals();
+        i++;
+    }
+
+    auto matrix = ess->getReconstruction();
+    (*matrix) = (*matrix)*1000;
+    std::cout << (*matrix) << std::endl;
+    auto reconstruction = ConvertMatrixToPointcloud(*matrix);
+    for (auto p : reconstruction->points_) {
+        std::cout << p[0] << " \t " << p[1] << " \t " << p[2] << std::endl;
+    }
+
+    o3d::DrawGeometries(
+            {cam_1_coords, cam_2_coords, cloud1, //proj_1, proj_2,
+             cyls[0], cyls[1], cyls[2], cyls[3],
+             reconstruction},
+            "PointCloud", 1600, 900);
 }
