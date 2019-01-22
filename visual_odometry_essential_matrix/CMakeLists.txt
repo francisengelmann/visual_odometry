@@ -3,9 +3,9 @@ set (CMAKE_CXX_STANDARD 11)
 
 project('VO_EssentialMatrix')
 
-include_directories('/home/engelmann/local/open3d/include')
+include_directories('/Users/francis/local/Open3D/include/Open3D')
 
-find_package(Open3D HINTS '/home/engelmann/local/open3d/lib/CMake')
+find_package(Open3D HINTS '/Users/francis/local/Open3D/lib/cmake/Open3D')
 list(APPEND Open3D_LIBRARIES dl)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Open3D_C_FLAGS}")

@@ -12,5 +12,10 @@ Estimate the essential matrix for two given frames and intrinsic camera paramete
 ### Direct Image Alignment
 Directly align two images.
 
+## Essential Matrix
+
+### Installation
+Install Open3D: http://open3d.org/docs/compilation.html
+
 ### References
 [1]
