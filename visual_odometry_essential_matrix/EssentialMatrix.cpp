@@ -91,10 +91,6 @@ std::shared_ptr<Eigen::MatrixXd> EssentialMatrix::estimateScale(
         const Eigen::Matrix<double, 3, 1> &T)
 {
     int num_points = (int)(this->points1.cols());
-    std::cout << "Needed mem: " << num_points * 3 * (num_points + 1) * 64.0 / 8.0 / 1024.0 / 1024.0;
-    std::cout << this->points1.rows() << " x " << this->points1.cols() << std::endl;
-    //Eigen::MatrixXd M(3 * num_points, num_points + 1);
-
     std::shared_ptr<Eigen::MatrixXd> M = std::make_shared<Eigen::MatrixXd>();
     M->resize(3 * num_points, num_points + 1);
     M->setZero();
@@ -110,28 +106,30 @@ std::shared_ptr<Eigen::MatrixXd> EssentialMatrix::estimateScale(
 
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(*M, Eigen::ComputeFullV);
     std::shared_ptr<Eigen::MatrixXd> V = std::make_shared<Eigen::MatrixXd>();
-    *V = svd.matrixV();
+    *V = svd.matrixV().col(num_points);
     return V;
 }
 
 std::shared_ptr<Eigen::MatrixXd> EssentialMatrix::getReconstruction(){
     long num_points = this->points2.cols();
 
-    auto scales0 = estimateScale(this->R1, this->T1);
-    auto scales1 = estimateScale(this->R1, this->T2);
     auto scales2 = estimateScale(this->R2, this->T1);
-    auto scales3 = estimateScale(this->R2, this->T2);
+    //auto scales1 = estimateScale(this->R1, this->T2);
+    //auto scales2 = estimateScale(this->R1, this->T1);
+    //auto scales3 = estimateScale(this->R2, this->T2);
 
     auto res = std::make_shared<Eigen::MatrixXd>();
-    res->resize(num_points * 4, 3);
+    res->resize(num_points * 1, 3);
 
     std::cout << num_points << " " << 3 << std::endl;
+    double gamma = (*scales2)(num_points, 0);
+    std::cout << gamma << std::endl;
     for (size_t i = 0; i < num_points; i++){
-        (*res)(num_points * 0 + i, 0) = this->points1(0, i) * (*scales0)(i, 0);
-        (*res)(num_points * 0 + i, 1) = this->points1(1, i) * (*scales0)(i, 0);
-        (*res)(num_points * 0 + i, 2) = (*scales0)(i, 0);
+        (*res)(num_points * 0 + i, 0) = this->points1(0, i) * (*scales2)(i, 0) * 1 / gamma;
+        (*res)(num_points * 0 + i, 1) = this->points1(1, i) * (*scales2)(i, 0) * 1 / gamma;
+        (*res)(num_points * 0 + i, 2) = (*scales2)(i, 0) * 1 / gamma;
     }
-    for (size_t i = 0; i < num_points; i++){
+    /*for (size_t i = 0; i < num_points; i++){
         (*res)(num_points * 1 + i, 0) = this->points1(0, i) * (*scales1)(i, 0);
         (*res)(num_points * 1 + i, 1) = this->points1(1, i) * (*scales1)(i, 0);
         (*res)(num_points * 1 + i, 2) = (*scales1)(i, 0);
@@ -145,7 +143,7 @@ std::shared_ptr<Eigen::MatrixXd> EssentialMatrix::getReconstruction(){
         (*res)(num_points * 3 + i, 0) = this->points1(0, i) * (*scales3)(i, 0);
         (*res)(num_points * 3 + i, 1) = this->points1(1, i) * (*scales3)(i, 0);
         (*res)(num_points * 3 + i, 2) = (*scales3)(i, 0);
-    }
+    }*/
     return res;
 }
 

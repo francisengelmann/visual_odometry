@@ -5,7 +5,7 @@
 #ifndef VISUALODOMETRY_ESSENTIALMATRIX_H
 #define VISUALODOMETRY_ESSENTIALMATRIX_H
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 
 #include <vector>
 #include <memory>
