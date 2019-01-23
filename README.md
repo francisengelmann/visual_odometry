@@ -6,9 +6,10 @@ This is a collection of visual odometry alogorithms.
 <p align="center"><img width="40%" src="data/essential_matrix.png" /></p>
 
 Estimate the Essential matrix from given 2D-2D pixel correspondences using the *eight-point algorithm* [1, 2]. 
-The correspondences are generated synthetically by projecting a 3D point cloud into two camera images.
-The relative pose between the cameras is recovered by factorizing the essential matrix which yields four potential solutions (teo rotation matrices and two translation vectors).
-The correct solution for the pose is selected using the positive depth constraint: all observed points must lie in front of both cameras.
+The correspondences are generated synthetically by projecting a 3D point cloud (shown in red) into two camera images.
+The relative pose between the cameras is recovered (up to scale) by factorizing the essential matrix which yields four potential solutions
+(two rotation matrices and two translation vectors).
+The correct solution for the pose is selected using the positive depth constraint: all reconstruced points (shown in blue) must lie in front of both cameras.
 
 ### Installation
 1. Install Open3D: http://open3d.org/docs/compilation.html  
