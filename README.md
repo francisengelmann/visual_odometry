@@ -3,7 +3,7 @@ This is a collection of visual odometry alogorithms.
 
 ## Essential Matrix
 
-<p align="center"><img width="40%" src="data/essential_matrix.png" /></p>
+<p align="center"><img width="60%" src="data/essential_matrix.png" /></p>
 
 Estimate the Essential matrix from given 2D-2D pixel correspondences using the *eight-point algorithm* [1, 2]. 
 The correspondences are generated synthetically by projecting a 3D point cloud (shown in red) into two camera images.
