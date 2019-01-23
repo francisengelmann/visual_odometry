@@ -120,8 +120,8 @@ int main(int argc, char *argv[])
                                                Eigen::Vector3d(0, 0, 0),
                                                Eigen::Vector3d(1, 1, 1));
     // Pose of camera 2
-    Eigen::Matrix4d P2 = *CreateTransformation(Eigen::Vector3d(-30,  315, 0),
-                                               Eigen::Vector3d(-3, -2, 2.0),
+    Eigen::Matrix4d P2 = *CreateTransformation(Eigen::Vector3d(0,  315, 0),
+                                               Eigen::Vector3d(-3, 0, 2.0),
                                                Eigen::Vector3d(1, 1, 1));
 
     // Project 3D to 2D to synthesize correspondences between two camera images
