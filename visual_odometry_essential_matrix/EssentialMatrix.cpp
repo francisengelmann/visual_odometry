@@ -39,7 +39,6 @@ void EssentialMatrix::estimateEssentialMatrix()
     }
 
     // Find minimizer for A*E:
-    // BDCSVD
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeFullV);
     this->E = svd.matrixV().col(8);
     this->E.resize(3, 3);
@@ -65,7 +64,6 @@ void EssentialMatrix::estimateEssentialMatrix()
     // Final essential matrix
     this->E = this->U * this->D * this->V.transpose();
 }
-
 
 void EssentialMatrix::constructPoses()
 {
@@ -118,14 +116,15 @@ Eigen::Matrix4d EssentialMatrix::getPoseFromRT(const Eigen::Matrix3d &R, const E
     return P;
 }
 
-std::tuple<Eigen::Matrix4d, std::shared_ptr<Eigen::MatrixXd>>  EssentialMatrix::getReconstruction(){
+std::tuple<Eigen::Matrix4d, std::shared_ptr<Eigen::MatrixXd>>  EssentialMatrix::getReconstruction()
+{
     long num_points = this->points2.cols();
     auto reconstruction = std::make_shared<Eigen::MatrixXd>();
     auto scales = std::make_shared<Eigen::MatrixXd>();
     Eigen::Matrix4d pose = Eigen::Matrix4d::Identity(4, 4);
     reconstruction->resize(num_points, 3);
 
-    // Iterate over four potential solutions, find correct one using positive depths constraint
+    // Iterate over four potential pose solutions, find correct one using positive depths constraint
     for (int p = 0; p < 4; p++) {
         if (p == 0) { scales = estimateScale(this->R1, this->T1); pose = getPoseFromRT(this->R1, this->T1); }
         if (p == 1) { scales = estimateScale(this->R1, this->T2); pose = getPoseFromRT(this->R1, this->T2); }
@@ -150,33 +149,6 @@ std::tuple<Eigen::Matrix4d, std::shared_ptr<Eigen::MatrixXd>>  EssentialMatrix::
     }
 
     return std::make_tuple(pose, reconstruction);
-}
-
-std::shared_ptr<std::vector<Eigen::Matrix4d>> EssentialMatrix::getPoses()
-{
-    auto res = std::make_shared<std::vector<Eigen::Matrix4d>>();
-    res->resize(4);
-
-    Eigen::Matrix4d P1 = Eigen::Matrix4d::Identity(4, 4);
-    Eigen::Matrix4d P2 = Eigen::Matrix4d::Identity(4, 4);
-    Eigen::Matrix4d P3 = Eigen::Matrix4d::Identity(4, 4);
-    Eigen::Matrix4d P4 = Eigen::Matrix4d::Identity(4, 4);
-
-    P1.block<3, 3>(0, 0) = this->R1;
-    P2.block<3, 3>(0, 0) = this->R1;
-    P3.block<3, 3>(0, 0) = this->R2;
-    P4.block<3, 3>(0, 0) = this->R2;
-
-    P1.block<3, 1>(0, 3) = this->T1;
-    P2.block<3, 1>(0, 3) = this->T2;
-    P3.block<3, 1>(0, 3) = this->T1;
-    P4.block<3, 1>(0, 3) = this->T2;
-
-    res->at(0) = P1;
-    res->at(1) = P2;
-    res->at(2) = P3;
-    res->at(3) = P4;
-    return res;
 }
 
 

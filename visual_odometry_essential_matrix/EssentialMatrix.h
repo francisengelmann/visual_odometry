@@ -33,8 +33,6 @@ public:
 
     std::tuple<Eigen::Matrix4d, std::shared_ptr<Eigen::MatrixXd>> getReconstruction();
 
-    std::shared_ptr<std::vector<Eigen::Matrix4d>> getPoses();
-
     Eigen::Matrix4d getPoseFromRT(const Eigen::Matrix3d &R, const Eigen::Vector3d &T);
 
     static void hat(Eigen::Matrix<double, 3, 1> &x, Eigen::Matrix3d &x_hat);

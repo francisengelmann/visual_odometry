@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     ess->estimateEssentialMatrix();
     ess->constructPoses();
 
-    // Get reconstructed pointcloud and correct pose
+    // Get reconstructed point cloud and correct pose
     std::shared_ptr<Eigen::MatrixXd> reconstruction;
     Eigen::Matrix4d pose;
     std::tie(pose, reconstruction) = ess->getReconstruction();
