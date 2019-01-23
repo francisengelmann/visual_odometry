@@ -110,41 +110,46 @@ std::shared_ptr<Eigen::MatrixXd> EssentialMatrix::estimateScale(
     return V;
 }
 
-std::shared_ptr<Eigen::MatrixXd> EssentialMatrix::getReconstruction(){
+Eigen::Matrix4d EssentialMatrix::getPoseFromRT(const Eigen::Matrix3d &R, const Eigen::Vector3d &T)
+{
+    Eigen::Matrix4d P = Eigen::Matrix4d::Identity(4, 4);
+    P.block<3, 3>(0, 0) = R;
+    P.block<3, 1>(0, 3) = T;
+    return P;
+}
+
+std::tuple<Eigen::Matrix4d, std::shared_ptr<Eigen::MatrixXd>>  EssentialMatrix::getReconstruction(){
     long num_points = this->points2.cols();
+    auto reconstruction = std::make_shared<Eigen::MatrixXd>();
+    auto scales = std::make_shared<Eigen::MatrixXd>();
+    Eigen::Matrix4d pose = Eigen::Matrix4d::Identity(4, 4);
+    reconstruction->resize(num_points, 3);
 
-    auto scales2 = estimateScale(this->R2, this->T1);
-    //auto scales1 = estimateScale(this->R1, this->T2);
-    //auto scales2 = estimateScale(this->R1, this->T1);
-    //auto scales3 = estimateScale(this->R2, this->T2);
+    // Iterate over four potential solutions, find correct one using positive depths constraint
+    for (int p = 0; p < 4; p++) {
+        if (p == 0) { scales = estimateScale(this->R1, this->T1); pose = getPoseFromRT(this->R1, this->T1); }
+        if (p == 1) { scales = estimateScale(this->R1, this->T2); pose = getPoseFromRT(this->R1, this->T2); }
+        if (p == 2) { scales = estimateScale(this->R2, this->T1); pose = getPoseFromRT(this->R2, this->T1); }
+        if (p == 3) { scales = estimateScale(this->R2, this->T2); pose = getPoseFromRT(this->R2, this->T2); }
 
-    auto res = std::make_shared<Eigen::MatrixXd>();
-    res->resize(num_points * 1, 3);
+        bool allPos = true;
+        for (int i = 0; i < num_points + 1 && allPos; i++) {
+            allPos = ((*scales)(i, 0) > 0);
+            std::cout << (*scales)(i, 0) << std::endl;
+        }
+        if (!allPos) { std::cout << "Negative depth for p = " << p << std::endl; continue; }
 
-    std::cout << num_points << " " << 3 << std::endl;
-    double gamma = (*scales2)(num_points, 0);
-    std::cout << gamma << std::endl;
-    for (size_t i = 0; i < num_points; i++){
-        (*res)(num_points * 0 + i, 0) = this->points1(0, i) * (*scales2)(i, 0) * 1 / gamma;
-        (*res)(num_points * 0 + i, 1) = this->points1(1, i) * (*scales2)(i, 0) * 1 / gamma;
-        (*res)(num_points * 0 + i, 2) = (*scales2)(i, 0) * 1 / gamma;
+        double gamma = (*scales)(num_points, 0);
+        std::cout << "gamma = " << gamma << std::endl;
+        for (size_t i = 0; i < num_points; i++){
+            (*reconstruction)(num_points * 0 + i, 0) = this->points1(0, i) * (*scales)(i, 0) / gamma;
+            (*reconstruction)(num_points * 0 + i, 1) = this->points1(1, i) * (*scales)(i, 0) / gamma;
+            (*reconstruction)(num_points * 0 + i, 2) = (*scales)(i, 0) / gamma;
+        }
+        break;
     }
-    /*for (size_t i = 0; i < num_points; i++){
-        (*res)(num_points * 1 + i, 0) = this->points1(0, i) * (*scales1)(i, 0);
-        (*res)(num_points * 1 + i, 1) = this->points1(1, i) * (*scales1)(i, 0);
-        (*res)(num_points * 1 + i, 2) = (*scales1)(i, 0);
-    }
-    for (size_t i = 0; i < num_points; i++){
-        (*res)(num_points * 2 + i, 0) = this->points1(0, i) * (*scales2)(i, 0);
-        (*res)(num_points * 2 + i, 1) = this->points1(1, i) * (*scales2)(i, 0);
-        (*res)(num_points * 2 + i, 2) = (*scales2)(i, 0);
-    }
-    for (size_t i = 0; i < num_points; i++){
-        (*res)(num_points * 3 + i, 0) = this->points1(0, i) * (*scales3)(i, 0);
-        (*res)(num_points * 3 + i, 1) = this->points1(1, i) * (*scales3)(i, 0);
-        (*res)(num_points * 3 + i, 2) = (*scales3)(i, 0);
-    }*/
-    return res;
+
+    return std::make_tuple(pose, reconstruction);
 }
 
 std::shared_ptr<std::vector<Eigen::Matrix4d>> EssentialMatrix::getPoses()

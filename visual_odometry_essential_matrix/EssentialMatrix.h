@@ -16,7 +16,7 @@ public:
     Eigen::MatrixXd points1, points2;
     Eigen::Matrix3d K1, K2;
     Eigen::MatrixXd E;
-    Eigen::MatrixXd U,D,V;
+    Eigen::MatrixXd U, D, V;
     Eigen::Matrix3d R1, R2;
     Eigen::Vector3d T1, T2;
 
@@ -29,12 +29,13 @@ public:
 
     void constructPoses();
 
-    std::shared_ptr<Eigen::MatrixXd> estimateScale(const Eigen::Matrix<double, 3, 3> &R,
-                                                   const Eigen::Matrix<double, 3, 1> &T);
+    std::shared_ptr<Eigen::MatrixXd> estimateScale(const Eigen::Matrix<double, 3, 3> &R, const Eigen::Matrix<double, 3, 1> &T);
 
-    std::shared_ptr<Eigen::MatrixXd> getReconstruction();
+    std::tuple<Eigen::Matrix4d, std::shared_ptr<Eigen::MatrixXd>> getReconstruction();
 
     std::shared_ptr<std::vector<Eigen::Matrix4d>> getPoses();
+
+    Eigen::Matrix4d getPoseFromRT(const Eigen::Matrix3d &R, const Eigen::Vector3d &T);
 
     static void hat(Eigen::Matrix<double, 3, 1> &x, Eigen::Matrix3d &x_hat);
 

@@ -73,6 +73,7 @@ std::shared_ptr<o3d::PointCloud> ProjectObject(const Eigen::Matrix3d &K,
         xh /= xh(2);
         projection->points_.emplace_back(xh);
     }
+    return projection;
 }
 
 std::shared_ptr<Eigen::MatrixXd> ConvertPointcloudToMatrix(
@@ -119,8 +120,8 @@ int main(int argc, char *argv[])
                                                Eigen::Vector3d(0, 0, 0),
                                                Eigen::Vector3d(1, 1, 1));
     // Pose of camera 2
-    Eigen::Matrix4d P2 = *CreateTransformation(Eigen::Vector3d(30,  315, 0),
-                                               Eigen::Vector3d(-3, 2, 2.0),
+    Eigen::Matrix4d P2 = *CreateTransformation(Eigen::Vector3d(-30,  315, 0),
+                                               Eigen::Vector3d(-3, -2, 2.0),
                                                Eigen::Vector3d(1, 1, 1));
 
     // Project 3D to 2D to synthesize correspondences between two camera images
@@ -133,31 +134,22 @@ int main(int argc, char *argv[])
     auto ess = std::make_shared<EssentialMatrix>(K, K, *points_1, *points_2);
     ess->estimateEssentialMatrix();
     ess->constructPoses();
-    auto poses = ess->getPoses();
-    auto reconstruction = ess->getReconstruction();
 
-    std::vector<std::shared_ptr<o3d::TriangleMesh>> cyls;
-    cyls.resize(4);
-    int i = 0;
-    for (auto &cyl : cyls) {
-        cyl = o3d::CreateMeshArrow(0.03, 0.08, 0.7, 0.3);
-        cyl->Transform(poses->at(i));
-        cyl->PaintUniformColor(Eigen::Vector3d(0.0, 0.5, 1.0));
-        cyl->ComputeVertexNormals();
-        i++;
-    }
-    
+    // Get reconstructed pointcloud and correct pose
+    std::shared_ptr<Eigen::MatrixXd> reconstruction;
+    Eigen::Matrix4d pose;
+    std::tie(pose, reconstruction) = ess->getReconstruction();
+
     // Visualization
-    auto pointcloud = ConvertMatrixToPointcloud(*reconstruction);
+    auto reconstructed_pose = o3d::CreateMeshArrow(0.03, 0.08, 0.7, 0.3);
+    reconstructed_pose->Transform(pose);
+    auto reconstructed_pointcloud = ConvertMatrixToPointcloud(*reconstruction);
     auto cam_1_coords = o3d::CreateMeshCoordinateFrame();
     auto cam_2_coords = o3d::CreateMeshCoordinateFrame();
     cam_1_coords->Transform(P1);
     cam_2_coords->Transform(P2);
     o3d::DrawGeometries(
-            {cam_1_coords, cam_2_coords, cloud1, //proj_1, proj_2,
-             //cyls[0], cyls[1],
-             cyls[2], //cyls[3],
-             pointcloud
-             },
+            {cam_1_coords, cam_2_coords, cloud1,
+             reconstructed_pose, reconstructed_pointcloud},
             "PointCloud", 1600, 900);
 }
