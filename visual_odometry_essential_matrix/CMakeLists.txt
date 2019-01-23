@@ -1,8 +1,3 @@
-cmake_minimum_required(VERSION 3.1)
-set (CMAKE_CXX_STANDARD 11)
-
-project('VO_EssentialMatrix')
-
 include_directories('/Users/francis/local/Open3D/include/Open3D')
 
 find_package(Open3D HINTS '/Users/francis/local/Open3D/lib/cmake/Open3D')
